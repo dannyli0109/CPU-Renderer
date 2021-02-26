@@ -79,6 +79,15 @@ Vector3 operator*(const Vector3& v, float s)
 	return Vector3(v.x * s, v.y * s, v.z * s);
 }
 
+Vector3 operator*(const Vector3& v1, const Vector3& v2)
+{
+	return Vector3(
+		v1.x * v2.x,
+		v1.y * v2.y,
+		v1.z * v2.z
+	);
+}
+
 Vector3 operator/(const Vector3& v, float s)
 {
 	s = 1.0f / s;
@@ -125,3 +134,10 @@ Vector3 Reject(const Vector3& a, const Vector3& b)
 {
 	return a - b * (Dot(a, b) / Dot(b, b));
 }
+
+Vector3 Reflect(const Vector3& a, const Vector3& normal)
+{
+	return a - normal * 2 * (Dot(a, normal));
+}
+
+

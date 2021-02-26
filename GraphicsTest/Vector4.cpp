@@ -101,6 +101,16 @@ Vector4 operator*(const Vector4& v, float s)
 	);
 }
 
+Vector4 operator*(const Vector4& v1, const Vector4& v2)
+{
+	return Vector4(
+		v1.x * v2.x,
+		v1.y * v2.y,
+		v1.z * v2.z,
+		v1.w * v2.w
+	);
+}
+
 Vector4 operator/(const Vector4& v, float s)
 {
 	s = 1 / s;

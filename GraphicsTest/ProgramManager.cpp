@@ -40,8 +40,13 @@ bool ProgramManager::Initialise()
 	//ParseObj("soulspear/soulspear.obj", );
 
 	diffuseTexture = new Texture("soulspear\\soulspear_diffuse.tga");
-
 	r->SetUniform("diffuseTexture", 0);
+
+	normalTexture = new Texture("soulspear\\soulspear_normal.tga");
+	r->SetUniform("normalTexture", 1);
+
+	specularTexture = new Texture("soulspear\\soulspear_specular.tga");
+	r->SetUniform("specularTexture", 2);
 
 	Mesh* mesh = new Mesh("soulspear/soulspear.obj");
 	meshes.push_back(mesh);
@@ -98,19 +103,25 @@ void ProgramManager::Draw()
 {
 	ImageRenderer* r = ImageRenderer::GetInstance();
 	r->Clear();
-
-	Matrix4 modelMatrix = RotateY(Matrix4(), 0);
+	Vector3 cameraPos(0.0f, 1.5f, 2.0f);
+	Matrix4 modelMatrix = RotateY(Matrix4(), 0.0f);
 	Matrix4 translateMatrix = Translate(Matrix4(), { 0.0f, 0.0f, 0.0f });
 	Matrix4 viewMatrix = GetViewMatrix({ 0, 2.0f, 5.0f }, { 0, 2.0f, 0 }, { 0, 1, 0 });
-	Matrix4 projectionMatrix = GetPerspProjectionMatrix(3.1415926f / 4.0f, r->GetWidth() / (float)(r->GetHeight()), 0.1f, 100.0f);
+	Matrix4 projectionMatrix = GetPerspProjectionMatrix(M_PI / 4.0f, r->GetWidth() / (float)(r->GetHeight()), 0.1f, 100.0f);
 	Matrix4 viewportMatrix = GetViewportMatrix(0, r->GetWidth(), r->GetHeight(), 0);
+	PointLight pointLight({ 0.0f, 1.5f, 3.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f }, 20.0f);
 
 	r->SetUniform("modelMatrix", modelMatrix);
 	r->SetUniform("viewMatrix", viewMatrix);
 	r->SetUniform("projectionMatrix", projectionMatrix);
 	r->SetUniform("viewportMatrix", viewportMatrix);
+	r->SetUniform("cameraPosition", cameraPos);
 
 	diffuseTexture->Bind(0);
+	normalTexture->Bind(1);
+	specularTexture->Bind(2);
+
+	pointLight.Update();
 	for (Mesh* mesh : meshes)
 	{
 		mesh->Bind();

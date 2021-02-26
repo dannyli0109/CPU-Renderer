@@ -6,6 +6,10 @@
 #include "ImageRenderer.h"
 #include "Utilities.h"
 
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 /*
 	glm::vec3 position;
 	glm::vec3 normal;

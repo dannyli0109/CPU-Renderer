@@ -64,6 +64,24 @@ Vector3 operator*(const Matrix3& m, const Vector3& v)
 	);
 }
 
+Matrix3 operator*(const Matrix3& m, float s)
+{
+	return Matrix3(
+		m(0, 0) * s, m(0, 1) * s, m(0, 2) * s,
+		m(1, 0) * s, m(1, 1) * s, m(1, 2) * s,
+		m(2, 0) * s, m(2, 1) * s, m(2, 2) * s
+	);
+}
+
+Matrix3 operator+(const Matrix3& m1, const Matrix3& m2)
+{
+	return Matrix3(
+		m1(0, 0) + m2(0, 0), m1(0, 1) + m2(0, 1), m1(0, 2) + m2(0, 2),
+		m1(1, 0) + m2(1, 0), m1(1, 1) + m2(1, 1), m1(1, 2) + m2(1, 2),
+		m1(2, 0) + m2(2, 0), m1(2, 1) + m2(2, 1), m1(2, 2) + m2(2, 2)
+	);
+}
+
 float Determinant(const Matrix3& m)
 {
 	return

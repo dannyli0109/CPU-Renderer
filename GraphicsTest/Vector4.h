@@ -19,6 +19,8 @@ public:
 Vector4 operator+(const Vector4& a, const Vector4& b);
 Vector4 operator-(const Vector4& a, const Vector4& b);
 Vector4 operator*(const Vector4& v, float s);
+Vector4 operator*(const Vector4& v1, const Vector4& v2);
+
 Vector4 operator/(const Vector4& v, float s);
 Vector4 operator-(const Vector4& v);
 float Magnitude(const Vector4& v);

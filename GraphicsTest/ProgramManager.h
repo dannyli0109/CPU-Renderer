@@ -3,6 +3,7 @@
 #include "ShaderProgram.h"
 #include "ImageRenderer.h"
 #include "Texture.h"
+#include "PointLight.h"
 
 #include <vector>
 #include "Utilities.h"
@@ -34,7 +35,9 @@ public:
 	void Run();
 	void ShutDown();
 	std::vector<Mesh*> meshes;
-	Texture* diffuseTexture = nullptr;
+	Texture* diffuseTexture;
+	Texture* normalTexture;
+	Texture* specularTexture;
 
 private:
 	void Draw();

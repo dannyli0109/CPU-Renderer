@@ -94,12 +94,16 @@ unsigned int ImageRenderer::UploadVertexData(const std::vector<Vertex>& vertexDa
 	positions[activeVertex].reserve(vertexData.size());
 	uvs[activeVertex].reserve(vertexData.size());
 	normals[activeVertex].reserve(vertexData.size());
+	vertTangents[activeVertex].reserve(vertexData.size());
+	vertBitangents[activeVertex].reserve(vertexData.size());
 
 	for (int i = 0; i < vertexData.size(); i++)
 	{
 		positions[activeVertex].push_back(vertexData[i].position);
 		uvs[activeVertex].push_back(vertexData[i].uv);
 		normals[activeVertex].push_back(vertexData[i].normal);
+		vertTangents[activeVertex].push_back(vertexData[i].vertTangent);
+		vertBitangents[activeVertex].push_back(vertexData[i].vertBitangent);
 	}
 	UnbindVertex();
 	return id;
@@ -153,7 +157,7 @@ unsigned int ImageRenderer::UploadTexture(const unsigned char* data, int& width,
 
 void ImageRenderer::ActiveTexture(int textureUnit)
 {
-	textureUnits[textureUnit] = textureID;
+	textureUnits[textureUnit] = activeTexture;
 }
 
 //Vector4 ImageRenderer::TextureLookup(const std::vector<std::vector<unsigned char>>& texture, float u, float v)
@@ -179,16 +183,16 @@ Vector4 lerp(float coe, Vector4 a, Vector4 b) {
 }
 Vector4 ImageRenderer::TextureLookup(const std::vector<std::vector<unsigned char>>& texture, float u, float v)
 {
-	float u_img = u * (texture[0].size() / 4);
-	float v_img = v * texture.size();
+	float uImg = u * (texture[0].size() / 4);
+	float vImg = v * texture.size();
 
-	Vector2 u00(std::floor(u_img), std::floor(v_img));
-	Vector2 u10(std::ceil(u_img), std::floor(v_img));
-	Vector2 u01(std::floor(u_img), std::ceil(v_img));
-	Vector2 u11(std::ceil(u_img), std::ceil(v_img));
+	Vector2 u00(std::floor(uImg), std::floor(vImg));
+	Vector2 u10(std::ceil(uImg), std::floor(vImg));
+	Vector2 u01(std::floor(uImg), std::ceil(vImg));
+	Vector2 u11(std::ceil(uImg), std::ceil(vImg));
 
-	float s = u_img - u00.x;
-	float t = v_img - u00.y;
+	float s = uImg - u00.x;
+	float t = vImg - u00.y;
 
 	Vector4 u0 = lerp(s, GetTexturePixel(texture, u00.x, u00.y), GetTexturePixel(texture, u10.x, u10.y));
 	Vector4 u1 = lerp(s, GetTexturePixel(texture, u01.x, u01.y), GetTexturePixel(texture, u11.x, u11.y));
@@ -216,6 +220,16 @@ void ImageRenderer::SetUniform(std::string s, Matrix4 m)
 void ImageRenderer::SetUniform(std::string s, int i)
 {
 	uniformI1[s] = i;
+}
+
+void ImageRenderer::SetUniform(std::string s, float f)
+{
+	uniformF1[s] = f;
+}
+
+void ImageRenderer::SetUniform(std::string s, Vector3 v)
+{
+	uniformV3[s] = v;
 }
 
 void ImageRenderer::SetPixel(int x, int y, float red, float green, float blue)
@@ -282,12 +296,15 @@ void ImageRenderer::Draw()
 		unsigned short i2 = indices[activeIndex][i + 1];
 		unsigned short i3 = indices[activeIndex][i + 2];
 
+		Vector4 p1 = Vector4(positions[activeVertex][i1], 1);
+		Vector4 p2 = Vector4(positions[activeVertex][i2], 1);
+		Vector4 p3 = Vector4(positions[activeVertex][i3], 1);
 
-		Vector4 p1 = m * Vector4(positions[activeVertex][i1], 1);
-		Vector4 p2 = m * Vector4(positions[activeVertex][i2], 1);
-		Vector4 p3 = m * Vector4(positions[activeVertex][i3], 1);
+		Vector4 cp1 = m * p1;
+		Vector4 cp2 = m * p2;
+		Vector4 cp3 = m * p3;
 
-		std::vector<Vector4> verts = { p1, p2, p3 };
+		std::vector<Vector4> verts = { cp1, cp2, cp3 };
 		for (Vector4& p : verts)
 		{
 			//p /= p.w;
@@ -311,11 +328,64 @@ void ImageRenderer::Draw()
 			p.z = newP.z;
 		}
 
+		Vector3 wp1 = modelMatrix * p1;
+		Vector3 wp2 = modelMatrix * p2;
+		Vector3 wp3 = modelMatrix * p3;
+
 		Vector2 uv1 = uvs[activeVertex][i1];
 		Vector2 uv2 = uvs[activeVertex][i2];
 		Vector2 uv3 = uvs[activeVertex][i3];
 
-		DrawTriangle(verts[0], verts[1], verts[2], uv1, uv2, uv3);
+		Vector3 t1 = Normalize(modelMatrix * Vector4(vertTangents[activeVertex][i1], 0));
+		Vector3 t2 = Normalize(modelMatrix * Vector4(vertTangents[activeVertex][i2], 0));
+		Vector3 t3 = Normalize(modelMatrix * Vector4(vertTangents[activeVertex][i3], 0));
+
+		Vector3 b1 = Normalize(modelMatrix * Vector4(vertBitangents[activeVertex][i1], 0));
+		Vector3 b2 = Normalize(modelMatrix * Vector4(vertBitangents[activeVertex][i2], 0));
+		Vector3 b3 = Normalize(modelMatrix * Vector4(vertBitangents[activeVertex][i3], 0));
+
+		Vector3 n1 = Normalize(modelMatrix * Vector4(normals[activeVertex][i1], 0));
+		Vector3 n2 = Normalize(modelMatrix * Vector4(normals[activeVertex][i2], 0));
+		Vector3 n3 = Normalize(modelMatrix * Vector4(normals[activeVertex][i3], 0));
+
+		//Matrix3 tbn1(
+		//	t1.x, t1.y, t1.z,
+		//	b1.x, b1.y, b1.z,
+		//	n1.x, n1.y, n1.z
+		//);
+
+		//Matrix3 tbn2(
+		//	t2.x, t2.y, t2.z,
+		//	b2.x, b2.y, b2.z,
+		//	n2.x, n2.y, n2.z
+		//);
+
+		//Matrix3 tbn3(
+		//	t3.x, t3.y, t3.z,
+		//	b3.x, b3.y, b3.z,
+		//	n3.x, n3.y, n3.z
+		//);
+
+		Matrix3 tbn1(
+			t1.x, b1.x, n1.x,
+			t1.y, b1.y, n1.y,
+			t1.z, b1.z, n1.z
+		);
+
+		Matrix3 tbn2(
+			t2.x, b2.x, n2.x,
+			t2.y, b2.y, n2.y,
+			t2.z, b2.z, n2.z
+		);
+
+		Matrix3 tbn3(
+			t3.x, b3.x, n3.x,
+			t3.y, b3.y, n3.y,
+			t3.z, b3.z, n3.z
+		);
+
+
+		DrawTriangle(verts[0], verts[1], verts[2], uv1, uv2, uv3, tbn1, tbn2, tbn3, wp1, wp2, wp3);
 	}
 }
 
@@ -361,16 +431,21 @@ void ImageRenderer::PupulateTexture()
 	}
 }
 
-double* ImageRenderer::BaryCentric(float x, float y, Vector3 p0, Vector3 p1, Vector3 p2)
+float* ImageRenderer::BaryCentric(float x, float y, Vector3 p0, Vector3 p1, Vector3 p2)
 {
-	double output[3];
+	float output[3];
 	output[0] = (x * (p1.y - p2.y) + (p2.x - p1.x) * y + p1.x * p2.y - p2.x * p1.y) / (p0.x * (p1.y - p2.y) + (p2.x - p1.x) * p0.y + p1.x * p2.y - p2.x * p1.y);
 	output[1] = (x * (p2.y - p0.y) + (p0.x - p2.x) * y + p2.x * p0.y - p0.x * p2.y) / (p1.x * (p2.y - p0.y) + (p0.x - p2.x) * p1.y + p2.x * p0.y - p0.x * p2.y);
 	output[2] = (x * (p0.y - p1.y) + (p1.x - p0.x) * y + p0.x * p1.y - p1.x * p0.y) / (p2.x * (p0.y - p1.y) + (p1.x - p0.x) * p2.y + p0.x * p1.y - p1.x * p0.y);
 	return output;
 }
 
-void ImageRenderer::DrawTriangle(Vector4 p1, Vector4 p2, Vector4 p3, Vector2 uv1, Vector2 uv2, Vector2 uv3)
+void ImageRenderer::DrawTriangle(
+	Vector4 p1, Vector4 p2, Vector4 p3, 
+	Vector2 uv1, Vector2 uv2, Vector2 uv3, 
+	Matrix3 tbn1, Matrix3 tbn2, Matrix3 tbn3,
+	Vector3 wp1, Vector3 wp2, Vector3 wp3
+)
 {
 	int xMin = std::min(p1.x, std::min(p2.x, p3.x));
 	int xMax = std::max(p1.x, std::max(p2.x, p3.x));
@@ -379,6 +454,12 @@ void ImageRenderer::DrawTriangle(Vector4 p1, Vector4 p2, Vector4 p3, Vector2 uv1
 
 	int diffuseTextureUnit = uniformI1["diffuseTexture"];
 	std::vector<std::vector<unsigned char>>& diffuseTexture = textures[textureUnits[diffuseTextureUnit]];
+
+	int normalTextureUnit = uniformI1["normalTexture"];
+	std::vector<std::vector<unsigned char>>& normalTexture = textures[textureUnits[normalTextureUnit]];
+
+	int specularTextureUnit = uniformI1["specularTexture"];
+	std::vector<std::vector<unsigned char>>& specularTexture = textures[textureUnits[specularTextureUnit]];
 
 	for (int y = yMin; y <= yMax; y++)
 	{
@@ -390,10 +471,10 @@ void ImageRenderer::DrawTriangle(Vector4 p1, Vector4 p2, Vector4 p3, Vector2 uv1
 			float yi = y + 0.5f;
 			if (InsideTriangle(xi, yi, p1, p2, p3))
 			{
-				double* barycentic = BaryCentric(xi, yi, p1, p2, p3);
-				double alpha = barycentic[0];
-				double beta = barycentic[1];
-				double gamma = barycentic[2];
+				float* barycentic = BaryCentric(xi, yi, p1, p2, p3);
+				float alpha = barycentic[0];
+				float beta = barycentic[1];
+				float gamma = barycentic[2];
 
 				//    * v[i].w() is the vertex view space depth value z.
 				//    * Z is interpolated view space depth for the current pixel
@@ -403,14 +484,48 @@ void ImageRenderer::DrawTriangle(Vector4 p1, Vector4 p2, Vector4 p3, Vector2 uv1
 				 float zp = alpha * p1.z / p1.w + beta * p2.z / p2.w + gamma * p3.z / p3.w;
 				 zp *= Z;
 				
-				//float zp = alpha * p1.w + beta * p2.w + gamma * p3.w;
+				// float zp = alpha * p1.w + beta * p2.w + gamma * p3.w;
 				
 				if (zp < depthBuffer[x + y * w])
 				{
 					depthBuffer[x + y * w] = zp;
 					Vector2 interpolatedTexCoords = uv1 * alpha + uv2 * beta  + uv3 * gamma;
+					Vector4 normalTap = TextureLookup(normalTexture, interpolatedTexCoords.x, interpolatedTexCoords.y);
+					Vector3 mapNormal(normalTap.x * 2.0f - 1.0f, normalTap.y * 2.0f - 1.0f, normalTap.z * 2.0f - 1.0f);
+					//Matrix3 tbnInterpolated = tbn1 * alpha + tbn2 * beta + tbn3 * gamma;
+					//Vector3 interpolatedNormals = Normalize(tbnInterpolated * mapNormal);
+					Vector3 n1 = Normalize(tbn1 * mapNormal);
+					Vector3 n2 = Normalize(tbn2 * mapNormal);
+					Vector3 n3 = Normalize(tbn3 * mapNormal);
+
+					Vector3 interpolatedNormals = n1 * alpha + n2 * beta + n3 * gamma;
+					Vector3 interpolatedWorldPosition = wp1 * alpha + wp2 * beta + wp3 * gamma;
+					Vector3 lightPosition = uniformV3["lightPosition"];
+					Vector3 diffuseColor = uniformV3["diffuseColor"];
 					Vector4 color = TextureLookup(diffuseTexture, interpolatedTexCoords.x, interpolatedTexCoords.y);
-					SetPixel(x, y, color.x, color.y, color.z);
+
+
+					float lightDistSquared = Dot(Vector4(lightPosition, 1.0) - interpolatedWorldPosition, Vector4(lightPosition, 1.0) - interpolatedWorldPosition);
+					float attenuation = 1.0 / lightDistSquared;
+
+					Vector3 toLight = Normalize(lightPosition - interpolatedWorldPosition);
+					float diffuseLevel = std::max(0.0f, Dot(toLight, interpolatedNormals));
+					Vector3 diffuseTerm = Vector3(0.8f, 0.8f, 0.8f) * diffuseColor * Vector3(20, 20, 20) * diffuseLevel * attenuation;
+					Vector4 diffuse = Vector4(diffuseTerm, 0) * color;
+
+					Vector3 cameraPosition = uniformV3["cameraPosition"];
+					Vector3 toCamera = Normalize(cameraPosition - interpolatedWorldPosition);
+					float specularPower = uniformF1["specularPower"];
+					Vector3 reflection = Reflect(-toLight, interpolatedNormals);
+					float specularLevel = std::pow(std::max(0.0f, Dot(toCamera, reflection)), specularPower);
+					Vector3 specularColor = TextureLookup(specularTexture, interpolatedTexCoords.x, interpolatedTexCoords.y);
+					Vector3 specularTerm = Vector3(0.5f, 0.5f, 0.5f) * specularColor * Vector3(20, 20, 20) * specularLevel * attenuation;
+
+					Vector4 fragColor = diffuse + Vector4(specularTerm, 1);
+					SetPixel(x, y, fragColor.x, fragColor.y, fragColor.z);
+					//SetPixel(x, y, interpolatedNormals.x, interpolatedNormals.y, interpolatedNormals.z);
+
+					//SetPixel(x, y, specularColor.x, specularColor.y, specularColor.z);
 				}
 			}
 		}
@@ -448,7 +563,7 @@ bool ImageRenderer::InsideTriangle(float x, float y, Vector3 p1, Vector3 p2, Vec
 void ImageRenderer::Clear()
 {
 	std::fill(frameBuffer.begin(), frameBuffer.end(), clearColor);
-	std::fill(depthBuffer.begin(), depthBuffer.end(), std::numeric_limits<double>::infinity());
+	std::fill(depthBuffer.begin(), depthBuffer.end(), std::numeric_limits<float>::infinity());
 
 }
 

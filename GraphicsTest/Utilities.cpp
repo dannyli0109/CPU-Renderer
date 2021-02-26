@@ -31,10 +31,7 @@ std::string LoadFileAsString(std::string filename)
 
 Matrix4 GetViewMatrix(const Vector3& eyePos, const Vector3& center, const Vector3& up)
 {
-	const Vector3& e = eyePos;
 	const Vector3& f = Normalize(center - eyePos);
-	//const Vector3& w = -g;
-	const Vector3& t = up;
 	const Vector3& s = Normalize(Cross(f, up));
 	const Vector3& u = Cross(s, f);
 
@@ -44,11 +41,6 @@ Matrix4 GetViewMatrix(const Vector3& eyePos, const Vector3& center, const Vector
 		-f.x, -f.y, -f.z, Dot(f, eyePos),
 		0, 0, 0, 1
 	);
-
-	//s.x, s.y, s.z, -Dot(s, eyePos),
-	//	u.x, u.y, u.z, -Dot(u, eyePos)
-	//	- f.x, -f.y, -f.z, Dot(f, eyePos),
-	//	0, 0, 0, 1
 	return  mView;
 }
 
@@ -74,71 +66,6 @@ Matrix4 GetOrthoProjectionMatrix(float l, float r, float b, float t, float n, fl
 
 Matrix4 GetPerspProjectionMatrix(float fovY, float aspect, float near, float far)
 {
-	// 1 account for aspect ratio
-	// aspect = w / h
-	// [x, y, z] -> [x / aspect, y, z]
-
-	// 2 Scaling x & y
-	// we make a right angle triangle for the near and far plane, they are simular triangle
-	// theta = fovY
-	// in yz plane tan(theta / 2) = y / z;
-	// tan(theta / 2) increase when theta increase, but we want to scale down more when theta increases, therefore we take the inverse of that
-	// same as the xz plane
-	// [x, y, z] -> [x / tan(theta / 2), y / tan(theta / 2), z]
-
-	// 3 Scaling z
-		// 1 Divided z to far - near
-		// eg. near = 1 far  = 10
-		// z = 7, 7 / (10 - 1)
-
-		// 2 need to move everything back to match the near plane
-		// - near / (far - near)
-
-		// 3 multiply the whole thing by far so far is now far
-	// (z / (far - near) - near / (far - near)) * far
-	// [x, y, z] -> [x, y,  (z * far) / (far - near) - (near * far) / (far - near)]
-
-	// 4 As x & y are further away, they move less
-	// [x, y, z] -> [x / z, y / z, z]
-
-	// 5 add all the transformaion together
-	// [x, y, z] -> [x / (a * z * tan(theta / 2), y / (z * tan(theta / 2), z * (far / (far - near)) - (near * far) / (far - near), 1]
-
-	// f = tan(theta / 2) q = far / (far - near)
-
-	// [x, y, -z, 1] -> [x / af, y / f, qz - near * q, z]
-	/*
-		[1 / af, 0, 0, 0]
-		[0, 1 / f, 0, 0]
-		[0, 0, -q, -near * q]
-		[0, 0, -1, 0]
-	*/
-
-	//float a = aspect;
-	//float f = tan(fovY / 2.0f);
-	//float q = far / (far - near);
-	//Matrix4 perspective(
-	//	1 / (a * f), 0,      0,		   0,
-	//	0,			 1 / f,  0,		   0, 
-	//	0,			 0,     -q,       -near * q,
-	//	0,			 0,     -1, 0
-	//);
-
-	//float n = abs(near);
-	//float f = abs(far);
-	//float t = tan(fovY / 2) / n;
-	//float r = aspect * t;
-	//float l = -r;
-	//float b = -t;
-
-	//Matrix4 ortho = GetOrthoProjectionMatrix(l, r, b, t, n, f);
-	//Matrix4 p(
-	//	n, 0, 0, 0,
-	//	0, n, 0, 0,
-	//	0, 0, -(n + f), - n * f,
-	//	0, 0, -1, 0
-	//);
-
 	float s = tan(fovY / 2);
 	Matrix4 perspective(
 		1 / (aspect * s), 0, 0, 0,
@@ -147,7 +74,6 @@ Matrix4 GetPerspProjectionMatrix(float fovY, float aspect, float near, float far
 		0, 0, -1, 0
 	);
 
-	//return perspective;
 	return perspective;
 }
 
@@ -176,7 +102,6 @@ std::vector<std::string> Split(const std::string& s, std::string delimiter)
 	res.push_back(s.substr(start, end));
 
 	return res;
-	//return std::string();
 }
 
 
@@ -299,7 +224,6 @@ void ParseObj(
 				normals.push_back({ x, y, z });
 			}
 		}
-		/*return fileSoFar.str();*/
 	}
 	else
 	{

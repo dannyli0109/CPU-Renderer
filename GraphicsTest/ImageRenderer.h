@@ -5,6 +5,7 @@
 #include <math.h>
 #include <algorithm>
 #include "Graphics.h"
+#include "Matrix3.h"
 #include "Matrix4.h"
 #include "Vector3.h"
 #include "Vector2.h"
@@ -45,6 +46,9 @@ public:
 
 	void SetUniform(std::string s, Matrix4 m);
 	void SetUniform(std::string s, int i);
+	void SetUniform(std::string s, float f);
+	void SetUniform(std::string s, Vector3 v);
+
 	void SetPixel(int x, int y, float red, float green, float blue);
 	void SetSize(int width, int height);
 
@@ -52,8 +56,13 @@ public:
 	void Draw();
 	void DrawLine(Vector3 p1, Vector3 p2, Vector4 color);
 	void PupulateTexture();
-	double* BaryCentric(float x, float y, Vector3 p0, Vector3 p1, Vector3 p2);
-	void DrawTriangle(Vector4 p1, Vector4 p2, Vector4 p3, Vector2 uv1, Vector2 uv2, Vector2 uv3);
+	float* BaryCentric(float x, float y, Vector3 p0, Vector3 p1, Vector3 p2);
+	void DrawTriangle(
+		Vector4 p1, Vector4 p2, Vector4 p3, 
+		Vector2 uv1, Vector2 uv2, Vector2 uv3, 
+		Matrix3 tbn1, Matrix3 tbn2, Matrix3 tbn3,
+		Vector3 wp1, Vector3 wp2, Vector3 wp3
+	);
 	bool InsideTriangle(float x, float y, Vector3 p1, Vector3 p2, Vector3 p3);
 
 	void Clear();
@@ -79,7 +88,7 @@ private:
 	unsigned int bufferCount = 0;
 	std::vector<Vector3> image;
 	std::vector<Vector3> frameBuffer;
-	std::vector<double> depthBuffer;
+	std::vector<float> depthBuffer;
 	Vector4 clearColor = { 0, 0, 0, 1 };
 
 	std::map<unsigned int, std::vector<Vector3>> positions;
@@ -92,10 +101,11 @@ private:
 	std::map<unsigned int, std::vector<std::vector<unsigned char>>> textures;
 	
 	std::map<int, unsigned int> textureUnits;
-	//std::vector<unsigned short> 
 
 	std::map<std::string, Matrix4> uniformM4;
 	std::map<std::string, int> uniformI1;
+	std::map<std::string, float> uniformF1;
+	std::map<std::string, Vector3> uniformV3;
 
 
 };
